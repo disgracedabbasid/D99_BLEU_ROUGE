@@ -16,6 +16,8 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
     from collections import Counter
     from statistics import geometric_mean
     from difflib import SequenceMatcher, Match
+    import nltk
+    from nltk.tokenize import word_tokenize
 
     if not casesensitive:
         predictions = [pred.lower() for pred in predictions]
@@ -50,6 +52,22 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
     rougeL_recall_scores = []
 
     if not microaveraging:
+        #longest common sequence
+        lcs = Match(a=0, b=0, size=0)
+        for  i in range(len(predictions)):
+            for reference in references[i]:
+                if lcs.size < SequenceMatcher(None, reference.split(), predictions[i].split()).find_longest_match().size:
+                    lcs = SequenceMatcher(None, reference.split(), predictions[i].split()).find_longest_match()
+                    rougeL_recall = lcs.size/len(reference.split())
+                    rougeL_precision = lcs.size/len(predictions[i].split())
+            rougeL_precision_scores.append(rougeL_precision)
+            rougeL_recall_scores.append(rougeL_recall)
+            #TODO add functionality for non-continguous common substrings
+
+        #tokenization
+        #predictions = [word_tokenize(prediction) for prediction in predictions]
+        #references = [word_tokenize(reference) for reference in references]
+
         #unigrams
         for i in range(len(predictions)):
             predicted_unigrams = predictions[i].split() 
@@ -93,17 +111,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
             rouge2_recall_scores.append(rouge2_recall)
             rouge2_precision_scores.append(rouge2_precision)
 
-        #longest common sequence
-        lcs = Match(a=0, b=0, size=0)
-        for  i in range(len(predictions)):
-            for reference in references[i]:
-                if lcs.size < SequenceMatcher(None, reference.split(), predictions[0].split()).find_longest_match().size:
-                    lcs = SequenceMatcher(None, reference.split(), predictions[0].split()).find_longest_match()
-                    rougeL_recall = lcs.size/len(reference.split())
-                    rougeL_precision = lcs.size/len(predictions[i].split())
-            rougeL_precision_scores.append(rougeL_precision)
-            rougeL_recall_scores.append(rougeL_recall)
-            #TODO add functionality for non-continguous common substrings
+
 
         rouge1_recall = sum(rouge1_recall_scores)/len(predictions)
         rouge1_precision = sum(rouge1_precision_scores)/len(predictions)
@@ -118,6 +126,30 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
 
     else: #microaveraging
+
+        #longest common sequence
+        lcs = Match(a=0, b=0, size=0)
+        lcs_sizes = []
+        lcs_reference_lengths = []
+        lcs_prediction_lengths = []
+        for  i in range(len(predictions)):
+            lcs_prediction_lengths.append(len(predictions[i].split()))
+            for reference in references[i]:
+                if lcs.size < SequenceMatcher(None, reference.split(), predictions[i].split()).find_longest_match().size:
+                    lcs = SequenceMatcher(None, reference.split(), predictions[i].split()).find_longest_match()
+                    lcs_sizes.append(lcs.size)
+                    lcs_reference_lengths.append(len(reference.split()))
+                    rougeL_recall_scores.append(lcs.size/len(reference.split()))
+                    rougeL_precision_scores.append(lcs.size/len(predictions[i].split()))
+            rougeL_recall = sum(lcs_sizes) / sum(lcs_reference_lengths)
+            rougeL_precision = sum(lcs_sizes) / sum(lcs_prediction_lengths)
+            rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
+            #TODO add functionality for non-continguous common substrings
+
+        #tokenization
+        #predictions = [word_tokenize(prediction) for prediction in predictions]
+        #references = [word_tokenize(reference) for reference in references]
+
         #unigrams
         total_elements = 0
         total_matches = 0
@@ -183,24 +215,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         rouge2_precision = total_matches / total_predicted if total_predicted > 0 else 0
         rouge2_F1 = 2*((rouge2_recall*rouge2_precision)/(rouge2_recall + rouge2_precision))
 
-        #longest common sequence
-        lcs = Match(a=0, b=0, size=0)
-        lcs_sizes = []
-        lcs_reference_lengths = []
-        lcs_prediction_lengths = []
-        for  i in range(len(predictions)):
-            lcs_prediction_lengths.append(len(predictions[i].split()))
-            for reference in references[i]:
-                if lcs.size < SequenceMatcher(None, reference.split(), predictions[0].split()).find_longest_match().size:
-                    lcs = SequenceMatcher(None, reference.split(), predictions[0].split()).find_longest_match()
-                    lcs_sizes.append(lcs.size)
-                    lcs_reference_lengths.append(len(reference.split()))
-                    rougeL_recall_scores.append(lcs.size/len(reference.split()))
-                    rougeL_precision_scores.append(lcs.size/len(predictions[i].split()))
-            rougeL_recall = sum(lcs_sizes) / sum(lcs_reference_lengths)
-            rougeL_precision = sum(lcs_sizes) / sum(lcs_prediction_lengths)
-            rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
-            #TODO add functionality for non-continguous common substrings
+
             
     return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}"
 
