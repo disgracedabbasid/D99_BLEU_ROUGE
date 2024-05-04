@@ -61,7 +61,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                     for unigram in predicted_unigrams:
                         if unigram in reference:
                             if reference.split().count(unigram) > matched_unigrams.count(unigram):
-                                matched_unigrams_current += min(reference.split().count(unigram), predicted_unigrams.count(unigram)) 
+                                matched_unigrams_current += 1
                                 matched_unigrams.append(unigram)
                     matched_unigrams_total = matched_unigrams_current
             rouge1_recall = matched_unigrams_total/len(reference.split())
@@ -69,13 +69,10 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
             rouge1_recall_scores.append(rouge1_recall)
             rouge1_precision_scores.append(rouge1_precision)
 
-
-
         #bigrams
         for i in range(len(predictions)):
             try:
                 predicted_bigrams = [tuple(predictions[i].split()[j:j+2]) for j in range(len(predictions[i].split()) - 1)]
-                #reference_bigrams = [tuple(reference.split()[i:i+2]) for reference in references[0] for i in range(len(reference.split()) - 1)]
                 
                 matched_bigrams_total = 0
                 matched_bigrams_current = 0
@@ -88,10 +85,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                                 if reference_bigrams.count(bigram) > matched_bigrams.count(bigram):
                                     matched_bigrams_current += 1
                                     matched_bigrams.append(bigram)
-                                    #print(f"current {matched_bigrams_current}")
                         matched_bigrams_total = matched_bigrams_current
-                        #print(f"total {matched_bigrams_total}")
-                        #print(f"len {len(reference_bigrams)}")
                         rouge2_recall = matched_bigrams_total/len(reference_bigrams)
                         rouge2_precision = matched_bigrams_total/len(predicted_bigrams)
             except ZeroDivisionError:
@@ -140,7 +134,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                     for unigram in predicted_unigrams:
                         if unigram in reference:
                             if reference.split().count(unigram) > matched_unigrams.count(unigram):
-                                matched_unigrams_current += min(reference.split().count(unigram), predicted_unigrams.count(unigram)) 
+                                matched_unigrams_current += 1
                                 matched_unigrams.append(unigram)
                                 reference_length_current = len(reference.split())
                     matched_unigrams_total = matched_unigrams_current
@@ -156,7 +150,6 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         for i in range(len(predictions)):
             try:
                 predicted_bigrams = [tuple(predictions[i].split()[j:j+2]) for j in range(len(predictions[i].split()) - 1)]
-                #reference_bigrams = [tuple(reference.split()[i:i+2]) for reference in references[0] for i in range(len(reference.split()) - 1)]
                 
                 matched_bigrams_total = 0
                 matched_bigrams_current = 0
@@ -177,10 +170,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                                     matched_bigrams_current += 1
                                     matched_bigrams.append(bigram)
                                     reference_length_current = len(reference_bigrams)
-                                    #print(f"current {matched_bigrams_current}")
                         matched_bigrams_total = matched_bigrams_current
-                        #print(f"total {matched_bigrams_total}")
-                        #print(f"len {len(reference_bigrams)}")
                         
                 matched_bigrams_total = matched_bigrams_current
                 total_matches += matched_bigrams_total
@@ -209,9 +199,10 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                     rougeL_precision_scores.append(lcs.size/len(predictions[i].split()))
             rougeL_recall = sum(lcs_sizes) / sum(lcs_reference_lengths)
             rougeL_precision = sum(lcs_sizes) / sum(lcs_prediction_lengths)
+            rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
             #TODO add functionality for non-continguous common substrings
             
-    return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}"
+    return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}"
 
-print(ROUGE(predictions=prediction, references=references, microaveraging=False))
-print(ROUGE(predictions=prediction, references=references, microaveraging=True))
+print(f"macro: {ROUGE(predictions=prediction, references=references, microaveraging=False)}")
+print(f"micro: {ROUGE(predictions=prediction, references=references, microaveraging=True)}")
