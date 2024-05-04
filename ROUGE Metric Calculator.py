@@ -42,7 +42,10 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
     rougeL_recall = 0.0
     rougeL_precision = 0.0
     rougeL_F1 = 0.0
-    rougeLsum = 0.0
+
+    rougeLsum_recall = 0.0
+    rougeLsum_precision = 0.0
+    rougeLsum_F1 = 0.0
 
     rouge1_recall_scores = []
     rouge1_precision_scores = []
@@ -62,8 +65,28 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
                     rougeL_precision = lcs.size/len(predictions[i].split())
             rougeL_precision_scores.append(rougeL_precision)
             rougeL_recall_scores.append(rougeL_recall)
-            #TODO add functionality for non-continguous common substrings
 
+            def get_lcs_size(reference, prediction):
+                return SequenceMatcher(None, reference.split(), prediction.split()).find_longest_match().size
+
+            rougeLsum_precision_scores = []
+            rougeLsum_recall_scores = []
+
+            for i in range(len(predictions)):
+                prediction_sentences = predictions[i].split('\n')
+                
+                for reference in references[i]:
+                    reference_sentences = reference.split('\n')
+                    
+                    for pred_sentence in prediction_sentences:
+                        lcs_sizes = [get_lcs_size(ref_sentence, pred_sentence) for ref_sentence in reference_sentences]
+                        max_lcs_size = max(lcs_sizes) if lcs_sizes else 0
+                        
+                        rougeLsum_recall = max_lcs_size / len(pred_sentence.split()) if pred_sentence.split() else 0
+                        rougeLsum_precision = max_lcs_size / len(reference.split()) if reference.split() else 0
+                        
+                        rougeLsum_precision_scores.append(rougeLsum_precision)
+                        rougeLsum_recall_scores.append(rougeLsum_recall)
         #tokenization
         #predictions = [word_tokenize(prediction) for prediction in predictions]
         #references = [word_tokenize(reference) for reference in references]
@@ -112,7 +135,6 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
             rouge2_precision_scores.append(rouge2_precision)
 
 
-
         rouge1_recall = sum(rouge1_recall_scores)/len(predictions)
         rouge1_precision = sum(rouge1_precision_scores)/len(predictions)
         rouge1_F1 = 2*((rouge1_recall*rouge1_precision)/(rouge1_recall + rouge1_precision))
@@ -125,6 +147,10 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         rougeL_precision = sum(rougeL_precision_scores)/len(predictions)
         rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
 
+        rougeLsum_recall = sum(rougeLsum_recall_scores)/len(predictions)
+        rougeLsum_precision = sum(rougeLsum_precision_scores)/len(predictions)
+        rougeLsum_F1 = 2*((rougeLsum_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
+
     else: #microaveraging
 
         #longest common sequence
@@ -132,6 +158,10 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         lcs_sizes = []
         lcs_reference_lengths = []
         lcs_prediction_lengths = []
+
+        def get_lcs_size(reference, prediction):
+            return SequenceMatcher(None, reference.split(), prediction.split()).find_longest_match().size
+
         for  i in range(len(predictions)):
             lcs_prediction_lengths.append(len(predictions[i].split()))
             for reference in references[i]:
@@ -144,7 +174,25 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
             rougeL_recall = sum(lcs_sizes) / sum(lcs_reference_lengths)
             rougeL_precision = sum(lcs_sizes) / sum(lcs_prediction_lengths)
             rougeL_F1 = 2*((rougeL_recall*rougeL_precision)/(rougeL_recall + rougeL_precision))
-            #TODO add functionality for non-continguous common substrings
+
+        lcs_sizes = []
+        lcs_reference_lengths = []
+        lcs_prediction_lengths = []
+
+        for i in range(len(predictions)):
+            prediction_sentences = predictions[i].split('\n')
+            lcs_prediction_lengths.extend(len(sentence.split()) for sentence in prediction_sentences)
+            
+            for reference in references[i]:
+                reference_sentences = reference.split('\n')
+                lcs_reference_lengths.extend(len(sentence.split()) for sentence in reference_sentences)
+                
+                for pred_sentence in prediction_sentences:
+                    lcs_sizes.append(max(get_lcs_size(ref_sentence, pred_sentence) for ref_sentence in reference_sentences))
+
+        rougeLsum_recall = sum(lcs_sizes) / sum(lcs_reference_lengths)
+        rougeLsum_precision = sum(lcs_sizes) / sum(lcs_prediction_lengths)
+        rougeLsum_F1 = 2 * ((rougeLsum_recall * rougeLsum_precision) / (rougeLsum_recall + rougeLsum_precision))
 
         #tokenization
         #predictions = [word_tokenize(prediction) for prediction in predictions]
@@ -217,7 +265,7 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
 
 
             
-    return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}"
+    return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}, 'ROUGEL-sum recall': {rougeLsum_recall}, 'ROUGEL-sum precision': {rougeLsum_precision}, 'ROUGEL-sum F1': {rougeLsum_F1}"
 
 print(f"macro: {ROUGE(predictions=prediction, references=references, microaveraging=False)}")
 print(f"micro: {ROUGE(predictions=prediction, references=references, microaveraging=True)}")
