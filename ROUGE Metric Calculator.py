@@ -1,5 +1,7 @@
 import evaluate
 
+print("Hello World")
+
 references = [["I really did not like Game of Thrones Season 8.", "I disliked Game of Thrones Season 8.", "I hated Game of Thrones Season 8.", "Game of Thrones Season 8 was not to my liking."]]
 
 prediction = ["I really did really did really did really did really did not like Game of Thrones Season 8."]
