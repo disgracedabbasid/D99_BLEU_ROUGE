@@ -21,8 +21,6 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
     #type errors
     if predictions == None or references == None:
         return "Invalid input"
-    elif len(predictions) != len(references):
-        return "Number of predictions and references must be equal"
     elif not isinstance(predictions, list):
         return "Predictions must be a list"
     elif not (isinstance(prediction, str) for prediction in predictions):
@@ -37,6 +35,8 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
         return "Predictions are empty"
     elif references == [[]]:
         return "References are empty"
+    elif len(predictions) != len(references):
+        return "Number of predictions and references must be equal"
     
 
     if not casesensitive:
@@ -367,8 +367,7 @@ class TestBLEU_emptypred(unittest.TestCase):
 
     def test_BLEU(self):
         result = BLEU(self.predictions, self.references)
-        self.assertEqual(result['bleu'], 0.0)
-        self.assertEqual(result['brevity_penalty'], 0.0)
+        self.assertEqual(result, "Predictions are empty")
 
 class TestBLEU_emptyref(unittest.TestCase):
     def setUp(self):
@@ -377,7 +376,7 @@ class TestBLEU_emptyref(unittest.TestCase):
 
     def test_BLEU(self):
         result = BLEU(self.predictions, self.references)
-        self.assertEqual(result['bleu'], 0.0)
+        self.assertEqual(result, "References are empty")
 
 class TestBLEU_Nonepred(unittest.TestCase):
     def setUp(self):
@@ -387,6 +386,15 @@ class TestBLEU_Nonepred(unittest.TestCase):
     def test_BLEU(self):
         result = BLEU(self.predictions, self.references)
         self.assertEqual(result, "Invalid input")
+
+class TestBLEU_unequal(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox", "jumps over the lazy dog"]
+        self.references = [["The quick brown fox jumps over the lazy dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result, "Number of predictions and references must be equal")
 
 if __name__ == '__main__':
     unittest.main()
@@ -405,3 +413,5 @@ TestBLEU_emptyref.setUp
 TestBLEU_emptyref.test_BLEU
 TestBLEU_Nonepred.setUp
 TestBLEU_Nonepred.test_BLEU
+TestBLEU_unequal.setUp
+TestBLEU_unequal.test_BLEU

@@ -24,8 +24,6 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
     #type errors
     if predictions == None or references == None:
         return "Invalid input"
-    elif len(predictions) != len(references):
-        return "Number of predictions and references must be equal"
     elif not isinstance(predictions, list):
         return "Predictions must be a list"
     elif not (isinstance(prediction, str) for prediction in predictions):
@@ -40,6 +38,8 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
         return "Predictions are empty"
     elif references == [[]]:
         return "References are empty"
+    elif len(predictions) != len(references):
+        return "Number of predictions and references must be equal"
 
     if not casesensitive:
         predictions = [pred.lower() for pred in predictions]
