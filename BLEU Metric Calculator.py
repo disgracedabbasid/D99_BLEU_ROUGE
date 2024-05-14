@@ -18,6 +18,27 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
     from statistics import geometric_mean
     from difflib import SequenceMatcher, Match
 
+    #type errors
+    if predictions == None or references == None:
+        return "Invalid input"
+    elif len(predictions) != len(references):
+        return "Number of predictions and references must be equal"
+    elif not isinstance(predictions, list):
+        return "Predictions must be a list"
+    elif not (isinstance(prediction, str) for prediction in predictions):
+        return "Predictions must be a list of strings"
+    elif not isinstance(references, list):
+        return "References must be a list"
+    elif not (isinstance(reference, list) for reference in references):
+        return "References must be a list of lists"
+    elif not ((isinstance(ref, str) for ref in reference) for reference in references):
+        return "References must be a list of list of strings"
+    elif predictions == []:
+        return "Predictions are empty"
+    elif references == [[]]:
+        return "References are empty"
+    
+
     if not casesensitive:
         predictions = [pred.lower() for pred in predictions]
         references = [[ref.lower() for ref in ref_list] for ref_list in references]
@@ -38,6 +59,7 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
     BLEU_four = 0.0
     reference_length = 1000000
     bp = 0.0
+    translation_length = 0.0
 
     BLEU_uni_scores = []
     BLEU_bi_scores = []
@@ -141,11 +163,12 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
                 bp = 1.0
             bps.append(bp)
         
-        BLEU_uni = sum(BLEU_uni_scores) / len(predictions)
-        BLEU_bi = sum(BLEU_bi_scores) / len(predictions)
-        BLEU_tri = sum(BLEU_tri_scores) / len(predictions)
-        BLEU_four = sum(BLEU_four_scores) / len(predictions)
-        bp = sum(bps) / len(predictions)
+        if len(predictions) != 0:
+            BLEU_uni = sum(BLEU_uni_scores) / len(predictions)
+            BLEU_bi = sum(BLEU_bi_scores) / len(predictions)
+            BLEU_tri = sum(BLEU_tri_scores) / len(predictions)
+            BLEU_four = sum(BLEU_four_scores) / len(predictions)
+            bp = sum(bps) / len(predictions)
 
     else: #microaveraging
         #unigrams
@@ -263,13 +286,18 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
 
         #brevity penalty
         for i in range(len(predictions)):
-            for reference in references[i]:
-                if (len(reference.split()) - len(predictions[i])) < (reference_length - len(predictions[i])):
-                    reference_length = len(reference.split())
-            if reference_length > len(predictions[i].split()):
-                bp = math.exp(1 - reference_length/len(predictions[i].split()))
+            if references[i] == []:
+                reference_length = 0.0
+                bp = 0.0
             else:
-                bp = 1.0
+                for reference in references[i]:
+                    if (len(reference.split()) - len(predictions[i])) < (reference_length - len(predictions[i])):
+                        reference_length = len(reference.split())
+                        translation_length = len(predictions[i].split())
+                if reference_length > len(predictions[i].split()):
+                    bp = math.exp(1 - reference_length/len(predictions[i].split()))
+                else:
+                    bp = 1.0
             bps.append(bp)
 
     #score
@@ -284,8 +312,8 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
     'bleu': BLEU_score,
     'precisions': [BLEU_uni, BLEU_bi, BLEU_tri, BLEU_four],
     'brevity_penalty': bp,
-    'length_ratio': len(predictions[0].split())/reference_length,
-    'translation_length': len(predictions[0].split()),
+    'length_ratio': (sum(len(prediction.split()) for prediction in predictions)/len(predictions))/reference_length if len(predictions) != 0 else 0.0,
+    'translation_length': translation_length,
     'reference_length': reference_length
     }
 
@@ -305,8 +333,75 @@ class TestBLEU(unittest.TestCase):
         result = BLEU(self.predictions, self.references)
         self.assertEqual(result['bleu'], 1.0)
 
+class TestBLEU_2(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox jumps over the lazy dog"]
+        self.references = [["dog lazy the over jumps fox brown quick The"]]
+
+    def test_BLEU(self):    
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result['precisions'], [1.0, 0.0, 0.0, 0.0])
+
+class TestBLEU_3(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox jumps over the lazy dog"]
+        self.references = [["The the quick quick brown brown fox fox jumps jumps over over the the lazy lazy dog dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references, casesensitive=False)
+        self.assertEqual(result['precisions'], [1.0, 1.0, 0.0, 0.0])
+
+class TestBLEU_4(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox jumps over the lazy dog"]
+        self.references = [["The the quick quick brown brown fox fox jumps jumps over over the the lazy lazy dog dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result['precisions'], [1.0, 0.875, 0.0, 0.0])
+
+class TestBLEU_emptypred(unittest.TestCase):
+    def setUp(self):
+        self.predictions = []
+        self.references = [["The the quick quick brown brown fox fox jumps jumps over over the the lazy lazy dog dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result['bleu'], 0.0)
+        self.assertEqual(result['brevity_penalty'], 0.0)
+
+class TestBLEU_emptyref(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox jumps over the lazy dog"]
+        self.references = [[]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result['bleu'], 0.0)
+
+class TestBLEU_Nonepred(unittest.TestCase):
+    def setUp(self):
+        self.predictions = None
+        self.references = [["The quick brown fox jumps over the lazy dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result, "Invalid input")
+
 if __name__ == '__main__':
     unittest.main()
 
 TestBLEU.setUp
 TestBLEU.test_BLEU
+TestBLEU_2.setUp
+TestBLEU_2.test_BLEU
+TestBLEU_3.setUp
+TestBLEU_3.test_BLEU
+TestBLEU_4.setUp
+TestBLEU_4.test_BLEU
+TestBLEU_emptypred.setUp
+TestBLEU_emptypred.test_BLEU
+TestBLEU_emptyref.setUp
+TestBLEU_emptyref.test_BLEU
+TestBLEU_Nonepred.setUp
+TestBLEU_Nonepred.test_BLEU
