@@ -267,7 +267,12 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
 
 
             
-    return f"'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision},'ROUGE-2 F-1': {rouge2_F1} 'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}, 'ROUGEL-sum recall': {rougeLsum_recall}, 'ROUGEL-sum precision': {rougeLsum_precision}, 'ROUGEL-sum F1': {rougeLsum_F1}"
+    return {
+    'ROUGE-1 recall': {rouge1_recall}, 'ROUGE-1 precision': {rouge1_precision}, 'ROUGE-1 F-1': {rouge1_F1}, 
+    'ROUGE-2 recall': {rouge2_recall}, 'ROUGE-2 precision': {rouge2_precision}, 'ROUGE-2 F-1': {rouge2_F1}, 
+    'ROUGE-L recall': {rougeL_recall}, 'ROUGE-L precision': {rougeL_precision}, 'ROUGE-L F-1': {rougeL_F1}, 
+    'ROUGEL-sum recall': {rougeLsum_recall}, 'ROUGEL-sum precision': {rougeLsum_precision}, 'ROUGEL-sum F1': {rougeLsum_F1}
+    }
 
 print(f"macro: {ROUGE(predictions=prediction, references=references, microaveraging=False)}")
 print(f"micro: {ROUGE(predictions=prediction, references=references, microaveraging=True)}")

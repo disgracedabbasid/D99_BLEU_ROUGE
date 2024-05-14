@@ -278,7 +278,35 @@ def BLEU(predictions=None, references=None, microaveraging=False, casesensitive=
     else:
         BLEU_score = 0.0
 
-    return f"'bleu': {BLEU_score}, 'precisions': [{BLEU_uni}, {BLEU_bi}, {BLEU_tri}, {BLEU_four}], 'brevity_penalty': {bp}, 'length_ratio': {len(predictions[0].split())/reference_length}, 'translation_length': {len(predictions[0].split())}, 'reference_length': {reference_length}"
+    #return f"'bleu': {BLEU_score}, 'precisions': [{BLEU_uni}, {BLEU_bi}, {BLEU_tri}, {BLEU_four}], 'brevity_penalty': {bp}, 'length_ratio': {len(predictions[0].split())/reference_length}, 'translation_length': {len(predictions[0].split())}, 'reference_length': {reference_length}"
 
-print(BLEU(predictions=prediction, references=references))
+    return {
+    'bleu': BLEU_score,
+    'precisions': [BLEU_uni, BLEU_bi, BLEU_tri, BLEU_four],
+    'brevity_penalty': bp,
+    'length_ratio': len(predictions[0].split())/reference_length,
+    'translation_length': len(predictions[0].split()),
+    'reference_length': reference_length
+    }
+
+
+#print(BLEU(predictions=prediction, references=references))
 print(BLEU(predictions=prediction, references=references, microaveraging=True))
+
+###unit testing
+import unittest
+
+class TestBLEU(unittest.TestCase):
+    def setUp(self):
+        self.predictions = ["The quick brown fox", "jumps over the lazy dog"]
+        self.references = [["The quick brown fox", "jumps over the lazy dog"], ["The quick brown fox", "jumps over the lazy dog"]]
+
+    def test_BLEU(self):
+        result = BLEU(self.predictions, self.references)
+        self.assertEqual(result['bleu'], 1.0)
+
+if __name__ == '__main__':
+    unittest.main()
+
+TestBLEU.setUp
+TestBLEU.test_BLEU
