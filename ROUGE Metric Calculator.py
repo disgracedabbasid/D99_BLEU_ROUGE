@@ -21,6 +21,26 @@ def ROUGE(predictions=None, references=None, microaveraging=False, casesensitive
     import nltk
     from nltk.tokenize import word_tokenize
 
+    #type errors
+    if predictions == None or references == None:
+        return "Invalid input"
+    elif len(predictions) != len(references):
+        return "Number of predictions and references must be equal"
+    elif not isinstance(predictions, list):
+        return "Predictions must be a list"
+    elif not (isinstance(prediction, str) for prediction in predictions):
+        return "Predictions must be a list of strings"
+    elif not isinstance(references, list):
+        return "References must be a list"
+    elif not (isinstance(reference, list) for reference in references):
+        return "References must be a list of lists"
+    elif not ((isinstance(ref, str) for ref in reference) for reference in references):
+        return "References must be a list of list of strings"
+    elif predictions == []:
+        return "Predictions are empty"
+    elif references == [[]]:
+        return "References are empty"
+
     if not casesensitive:
         predictions = [pred.lower() for pred in predictions]
         references = [[ref.lower() for ref in ref_list] for ref_list in references]
